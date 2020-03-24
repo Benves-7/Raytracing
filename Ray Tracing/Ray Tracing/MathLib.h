@@ -198,11 +198,11 @@ inline vec3 unit_vector(vec3 v) {
 }
 
 
-float random() {
+float randomFloat() {
 	float temp = rand();
 	return temp/RAND_MAX;
 }
-float randomboth() {
+float randomFloatboth() {
 	float temp1 = rand();
 	float temp2 = rand();
 	if (temp2/RAND_MAX < 0.5)

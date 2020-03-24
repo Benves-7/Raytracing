@@ -14,9 +14,9 @@ public:
     sphere() {}
     sphere(vec3 cen, float r) : center(cen), radius(r) {};
     sphere(vec3 cen, float r, material* mat) : center(cen), radius(r), mat_ptr(mat) {};
-    ~sphere() {
-        delete mat_ptr;
-    }
+    //~sphere() {
+    //    delete mat_ptr;
+    //}
     virtual bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
     vec3 center;
     float radius;
@@ -47,10 +47,7 @@ vec3 random_in_unit_sphere()
     vec3 p;
     do
     {
-        float test1 = random();
-        float test2 = random();
-        float test3 = random();
-        p = 2.0*vec3(random(),random(),random()) - vec3(1,1,1);
+        p = 2.0*vec3(randomFloat(), randomFloat(), randomFloat()) - vec3(1,1,1);
     } while (p.squared_length() >= 1.0);
     return p;
 }

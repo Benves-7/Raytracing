@@ -3,18 +3,17 @@
 #include <sstream>
 #include <fstream>
 #include <string>
-#include <limits>
+#include <cfloat>
 #include <chrono>
 #include "sphere.h"
 #include "hitable_list.h"
 #include "camera.h"
 #include "material.h"
 
-float MAXFLOAT = std::numeric_limits<float>::max();
 
 vec3 color(const ray& r, hitable *world, int max_bounces, int depth = 0) {
 	hit_record rec;
-	if (world->hit(r, 0.0001, MAXFLOAT, rec)) {
+	if (world->hit(r, 0.0001, FLT_MAX, rec)) {
 		ray scattered;
 		vec3 attenuation;
 		if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
@@ -58,7 +57,7 @@ int main(int argc, char** argv)
 	for (int i = 0; i < argc; ++i)
 	{
 		std::string arg = argv[i];
-		if (arg.substr(arg.length() - 4) == ".exe"){ continue; }
+		if (arg.substr(arg.length() - 4) == ".exe" || arg.substr(arg.length() - 2) == ".o"){ continue; }
 		else if (arg == "size" || arg == "-size")
 		{
 			nx = std::atoi(argv[i + 1]);
@@ -103,7 +102,7 @@ int main(int argc, char** argv)
 
 	//============================== file saving ==============================
 	std::ofstream outputfile;
-	outputfile.open("Output/" + std::to_string(nx) + "x" + std::to_string(ny) + "/ -spheres " + std::to_string(spheres-2) + " -rpp " + std::to_string(ns) + " -bounces " + std::to_string(bounces) + " -vfov " + std::to_string(vfov) + " -ap " + stream.str() + ".ppm");
+	outputfile.open("Output/-spheres " + std::to_string(spheres-2) + " -rpp " + std::to_string(ns) + " -bounces " + std::to_string(bounces) + " -vfov " + std::to_string(vfov) + " -ap " + stream.str() + ".ppm");
 	outputfile << "P3\n" << nx << " " << ny << "\n255\n";
 
 	if (!outputfile.is_open())
@@ -120,20 +119,20 @@ int main(int argc, char** argv)
 	float size;
 	for (int i = 2; i < spheres; i++)
 	{
-		float ran = random();
+		float ran = randomFloat();
 		size = ran * radius_max + radius_min;
-		float type = random();
+		float type = randomFloat();
 		if (type <= 0.5)
 		{
-			list[i] = new sphere(vec3(randomboth() * spread, size - 0.5, randomboth() * spread), size, new lambertian(vec3(random(), random(), random())));
+			list[i] = new sphere(vec3(randomFloatboth() * spread, size - 0.5, randomFloatboth() * spread), size, new lambertian(vec3(randomFloat(), randomFloat(), randomFloat())));
 		}
 		else if (type > 0.5 && type <= 0.9)
 		{
-			list[i] = new sphere(vec3(randomboth() * spread, size - 0.5, randomboth() * spread), size, new metal(vec3(random(),random(),random()), random()));
+			list[i] = new sphere(vec3(randomFloatboth() * spread, size - 0.5, randomFloatboth() * spread), size, new metal(vec3(randomFloat(), randomFloat(), randomFloat()), randomFloat()));
 		}
 		else if (type > 0.9)
 		{
-			list[i] = new sphere(vec3(randomboth() * spread, size - 0.5, randomboth() * spread), size, new dielectric(random()));
+			list[i] = new sphere(vec3(randomFloatboth() * spread, size - 0.5, randomFloatboth() * spread), size, new dielectric(randomFloat()));
 		}
 
 		
@@ -164,8 +163,8 @@ int main(int argc, char** argv)
 		for (int i = 0; i < nx; i++) {
 			vec3 col(0, 0, 0);
 			for (int s = 0; s < ns; s++) {
-				float u = (float(i)+random()) / float(nx);
-				float v = (float(j)+random()) / float(ny);
+				float u = (float(i) + randomFloat()) / float(nx);
+				float v = (float(j) + randomFloat()) / float(ny);
 				ray r = cam.get_ray(u, v);
 				col += color(r, world, bounces);
 			} // per ray
@@ -189,7 +188,4 @@ int main(int argc, char** argv)
 	std::cout << "rays/s: " << ns*nx*ny/time_span.count() << std::endl;
 	std::cout << "=========================================================================" << std::endl;
 	//=========================================================================
-
-	for (int i = 0; i < spheres; i++)
-		delete[] list[i];
 }

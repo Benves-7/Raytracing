@@ -90,7 +90,7 @@ public:
         else {
             reflect_prob = 1.0;
         }
-        if (random() < reflect_prob) {
+        if (randomFloat() < reflect_prob) {
             scattered = ray(rec.p, reflected);
         }
         else {
