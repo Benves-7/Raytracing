@@ -1,3 +1,6 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -9,7 +12,6 @@
 #include "hitable_list.h"
 #include "camera.h"
 #include "material.h"
-
 
 vec3 color(const ray& r, hitable *world, int max_bounces, int depth = 0) {
 	hit_record rec;
@@ -33,11 +35,11 @@ vec3 color(const ray& r, hitable *world, int max_bounces, int depth = 0) {
 int main(int argc, char** argv)
 {
 	//============================ const arguments ============================
-	int nx = 50;
-	int ny = 25;
-	int ns = 5;
-	int bounces = 2;
-	int spheres = 2;
+	int nx = 600;
+	int ny = 300;
+	int ns = 10;
+	int bounces = 5;
+	int spheres = 27;
 	int vfov = 90;
 	float aperature = 0.0;
 
@@ -155,6 +157,8 @@ int main(int argc, char** argv)
 		<< "=========================================================================\n";
 	//=========================================================================
 
+	//=============================== main loop ===============================
+
 	camera cam(lookfrom, lookat, vup, vfov, float(nx) / float(ny), aperature, dist_to_focus);
 
 	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
@@ -176,6 +180,7 @@ int main(int argc, char** argv)
 			outputfile << ir << " " << ig << " " << ib << "\n";
 		}// per pixel
 	}// per row
+	//=========================================================================
 
 	//============================= print results =============================
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -188,4 +193,9 @@ int main(int argc, char** argv)
 	std::cout << "rays/s: " << ns*nx*ny/time_span.count() << std::endl;
 	std::cout << "=========================================================================" << std::endl;
 	//=========================================================================
+
+	//============================== Delete loop ==============================
+
+	//=========================================================================
+
 }

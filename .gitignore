@@ -3,6 +3,15 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Ingnore Folders
+[Tt]est documentation.txt
+[Ll]ab-env
+[Pp]ath tracing
+[Rr]ay Tracing/.visuallint
+[Rr]ay Tracing/[Rr]ay Tracing/cache*
+[Rr]ay Tracing/[Rr]ay Tracing/call*
+[Tt]esting/
+
 # User-specific files
 *.rsuser
 *.suo
