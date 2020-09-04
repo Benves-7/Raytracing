@@ -88,7 +88,12 @@ private:
 class vec3
 {
 public:
-    inline vec3() {}
+	vec3() 
+	{ 
+		e[0] = 0;
+		e[1] = 0;
+		e[2] = 0;
+	}
     inline vec3(float e0, float e1, float e2) {e[0] = e0; e[1] = e1; e[2] = e2;}
     inline float x() const {return e[0];}
     inline float y() const {return e[1];}
@@ -133,7 +138,7 @@ public:
 		return *this;
 	};
 	inline vec3& operator/=(const float t) {
-		float k = 1.0 / t;
+		float k = 1.0f / t;
 		e[0] *= k;
 		e[1] *= k;
 		e[2] *= k;
@@ -145,7 +150,7 @@ public:
     inline float squared_length() const { 
 		return e[0]*e[0] + e[1]*e[1] + e[2]*e[2]; }
 	inline void make_unit_vector() {
-		float k = 1.0 / length();
+		float k = 1.0f / length();
 		e[0] *= k; e[1] *= k; e[2] *= k;
 	}
 
@@ -199,17 +204,17 @@ inline vec3 unit_vector(vec3 v) {
 
 
 float randomFloat() {
-	float temp = rand();
-	return temp/RAND_MAX;
+	float temp = (float)rand() / RAND_MAX;
+	return temp;
 }
 float randomFloatboth() {
-	float temp1 = rand();
-	float temp2 = rand();
-	if (temp2/RAND_MAX < 0.5)
+	float temp1 = (float)rand() / RAND_MAX;
+	float temp2 = (float)rand() / RAND_MAX;
+	if (temp2 < 0.5)
 	{
 		temp1 = -temp1;
 	}
-	return temp1/RAND_MAX;
+	return temp1;
 }
 
 #pragma endregion
@@ -370,7 +375,7 @@ public:
         return Vector4D(this->cord[0]/t, this->cord[1]/t, this->cord[2]/t);
 	}
 	inline Vector4D operator/=(const float t) {
-	    float temp = 1.0/t;
+	    float temp = 1.0f/t;
 
 	    this->cord[0] *= temp;
 	    this->cord[1] *= temp;

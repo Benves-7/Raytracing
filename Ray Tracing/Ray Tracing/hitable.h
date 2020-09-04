@@ -10,6 +10,7 @@
 class material;
 
 struct hit_record {
+    hit_record() { mat_ptr = NULL; }
     float t = 0.0f;
     vec3 p;
     vec3 normal;
