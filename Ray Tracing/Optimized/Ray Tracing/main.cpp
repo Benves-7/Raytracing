@@ -1,6 +1,3 @@
-// This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
-
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -8,38 +5,110 @@
 #include <string>
 #include <cfloat>
 #include <chrono>
+#include <pthread.h>
+#include <sys/sysinfo.h>
+
 #include "sphere.h"
 #include "hitable_list.h"
 #include "camera.h"
 #include "material.h"
 
-vec3 color(const ray& r, hitable *world, int max_bounces, int depth = 0) {
+using namespace std;
+const int THREAD_NUM = get_nprocs();
+
+#pragma region Structs
+
+struct pixel
+{
+	pixel() {}
+	pixel(int x, int y) : x(x), y(y) {}
+	int x, y;
+	vec3 color;
+};
+struct thread_arg
+{
+	thread_arg() {}
+	thread_arg(int w, int h, int y1, int y2, int nr, int nb, camera *c, hitable *world) : width(w), heigth(h), startY(y1), endY(y2), numRays(nr), bounces(nb), cam(c), world(world) {}
+
+	void setFramebuffer(pixel *fb)
+	{
+		framebuffer = fb;
+	}
+
+	int width, heigth, startY, endY, numRays, bounces;
+	camera *cam;
+	hitable *world;
+	pixel *framebuffer;
+};
+#pragma endregion
+
+vec3 color(const ray &r, hitable *world, int max_bounces, int depth = 0)
+{
 	hit_record rec;
-	if (world->hit(r, 0.0001f, FLT_MAX, rec)) {
+	if (world->hit(r, 0.0001f, FLT_MAX, rec))
+	{
 		ray scattered;
 		vec3 attenuation;
-		if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
+		if (depth < max_bounces && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+		{
 			return attenuation * color(scattered, world, max_bounces, depth + 1);
 		}
-		else {
+		else
+		{
 			return vec3(0, 0, 0);
 		}
 	}
-	else {
+	else
+	{
 		vec3 unit_direction = unit_vector(r.direction());
 		float t = 0.5f * (unit_direction.y() + 1.0f);
 		return (1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
 	}
- }
+}
 
-int main(int argc, char** argv)
+void *ThreadLoop(void *arguments)
 {
+	struct thread_arg *arg = (struct thread_arg *)arguments;
+
+	for (int y = arg->startY; y <= arg->endY; y++)
+	{
+		for (int x = 0; x < arg->width; x++)
+		{
+			vec3 col(0, 0, 0);
+			for (int s = 0; s < arg->numRays; s++)
+			{
+				float u = (float(x) + randomFloat()) / float(arg->width);
+				float v = (float(y) + randomFloat()) / float(arg->heigth);
+				ray r = arg->cam->get_ray(u, v);
+				col += color(r, arg->world, arg->bounces);
+			}
+			col /= float(arg->numRays);
+			col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+			int ir = int(255.99 * col[0]);
+			int ig = int(255.99 * col[1]);
+			int ib = int(255.99 * col[2]);
+			arg->framebuffer[x + y * arg->width].color.set(ir, ig, ib);
+		}
+	}
+}
+
+int main(int argc, char **argv)
+{
+#pragma region Const arguments
 	//============================ const arguments ============================
 	int nx = 200;
 	int ny = 100;
 	int ns = 10;
-	int bounces = 5;
 	int spheres = 10;
+	int canvasSize = nx * ny;
+
+	pixel *framebuffer = new pixel[canvasSize];
+
+	vec3 lookfrom(0, 5, 3);
+	vec3 lookat(0, 0, -1);
+	float dist_to_focus = (lookfrom - lookat).length();
+
+	int bounces = 5;
 	float vfov = 90.0f;
 	float aperature = 0.0f;
 
@@ -47,19 +116,23 @@ int main(int argc, char** argv)
 	float radius_max = 1.0f;
 	float radius_min = 0.2f;
 
-	vec3 lookfrom(0, 5, 3);
-	vec3 lookat(0, 0, -1);
 	vec3 vup(0, 1, 0);
-	float dist_to_focus = (lookfrom - lookat).length();
 	std::stringstream stream;
 	stream << std::fixed << std::setprecision(2) << aperature;
-	//=========================================================================
 
+	camera cam(lookfrom, lookat, vup, vfov, float(nx) / float(ny), aperature, dist_to_focus);
+
+//=========================================================================
+#pragma endregion
+#pragma region read Inputs
 	//============================ input arguments ============================
 	for (int i = 0; i < argc; ++i)
 	{
 		std::string arg = argv[i];
-		if (arg.substr(arg.length() - 4) == ".exe" || arg.substr(arg.length() - 2) == ".o") { continue; }
+		if (arg.substr(arg.length() - 4) == ".exe" || arg.substr(arg.length() - 2) == ".o")
+		{
+			continue;
+		}
 		else if (arg == "size" || arg == "-size")
 		{
 			nx = std::atoi(argv[i + 1]);
@@ -100,22 +173,25 @@ int main(int argc, char** argv)
 		std::cout << "You have entered a unrecognised command." << std::endl;
 	}
 
-	//=========================================================================
-
+//=========================================================================
+#pragma endregion
+#pragma region File saving(setup)
 	//============================== file saving ==============================
 	std::ofstream outputfile;
 	outputfile.open("Output/-spheres " + std::to_string(spheres - 2) + " -rpp " + std::to_string(ns) + " -bounces " + std::to_string(bounces) + " -vfov " + std::to_string(vfov) + " -ap " + stream.str() + ".ppm");
-	outputfile << "P3\n" << nx << " " << ny << "\n255\n";
+	outputfile << "P3\n"
+			   << nx << " " << ny << "\n255\n";
 
 	if (!outputfile.is_open())
 		std::cerr << "*** error: could not open output file\n";
 
-	//=========================================================================
-
+//=========================================================================
+#pragma endregion
+#pragma region Sphere setup
 	//============================= create sphere =============================
 	float R = (float)cos(M_PI / 4);
-	hitable** list = new hitable*[spheres];
-	material** matList = new material*[spheres];
+	hitable **list = new hitable *[spheres];
+	material **matList = new material *[spheres];
 
 	// first two will always have a set position and be locked down.
 	matList[0] = new metal(vec3(0.8f, 0.8f, 0.8f), 0.0f);
@@ -123,10 +199,10 @@ int main(int argc, char** argv)
 	matList[2] = new metal(vec3(0.8f, 0.6f, 0.2f), 0.5f);
 	matList[3] = new dielectric(2.0f);
 
-	list[0] = new sphere(vec3(0, 0, -1), 0.5, matList[0]); // center sphere
+	list[0] = new sphere(vec3(0, 0, -1), 0.5, matList[0]);			// center sphere
 	list[1] = new sphere(vec3(0, -10000.5, -1), 10000, matList[1]); // world
-	list[2] = new sphere(vec3(1, 0, -1), 0.5, matList[2]); //right of center
-	list[3] = new sphere(vec3(-1, 0, -1), 0.5, matList[3]); // left of center
+	list[2] = new sphere(vec3(1, 0, -1), 0.5, matList[2]);			//right of center
+	list[3] = new sphere(vec3(-1, 0, -1), 0.5, matList[3]);			// left of center
 	float size;
 	for (int i = 4; i < spheres; i++)
 	{
@@ -152,9 +228,10 @@ int main(int argc, char** argv)
 			list[i] = new sphere(vec3(randomFloatboth() * spread, size - 0.5f, randomFloatboth() * spread), size, matList[i]);
 		}
 	}
-	hitable* world = new hitable_list(list, spheres);
-	//=========================================================================
-
+	hitable *world = new hitable_list(list, spheres);
+//=========================================================================
+#pragma endregion
+#pragma region Print config
 	//============================= print configs =============================
 	std::cout
 		<< "=========================================================================\n"
@@ -165,46 +242,74 @@ int main(int argc, char** argv)
 		<< "spheres:	" << spheres << "\n"
 		<< "aperature:	" << aperature << "\n"
 		<< "=========================================================================\n";
-	//=========================================================================
+//=========================================================================
+#pragma endregion
+#pragma region Thread Setup
+	//=============================== threading ===============================
 
+	pthread_t t[THREAD_NUM];
+	thread_arg *args[THREAD_NUM];
+	void *status;
+
+//=========================================================================
+#pragma endregion
+#pragma region Main Loop
 	//=============================== main loop ===============================
-
-	camera cam(lookfrom, lookat, vup, vfov, float(nx) / float(ny), aperature, dist_to_focus);
 
 	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
-	for (int j = ny - 1; j >= 0; j--) {
-		for (int i = 0; i < nx; i++) {
-			vec3 col(0, 0, 0);
-			for (int s = 0; s < ns; s++) {
-				float u = (float(i) + randomFloat()) / float(nx);
-				float v = (float(j) + randomFloat()) / float(ny);
-				ray r = cam.get_ray(u, v);
-				col += color(r, world, bounces);
-			} // per ray
-			col /= float(ns);
-			col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
-			int ir = int(255.99 * col[0]);
-			int ig = int(255.99 * col[1]);
-			int ib = int(255.99 * col[2]);
-			outputfile << ir << " " << ig << " " << ib << "\n";
-		}// per pixel
-	}// per row
-	//=========================================================================
+	int ySpread = ny / THREAD_NUM;
 
-	//============================= print results =============================
+	int rc;
+
+	for (int i = 0; i < THREAD_NUM; i++)
+	{
+		if (i == 0)
+		{
+			args[i] = new thread_arg(nx, ny, i * ySpread, (i + 1) * ySpread, ns, bounces, &cam, world);
+		}
+		else
+		{
+			args[i] = new thread_arg(nx, ny, i * ySpread + 1, (i + 1) * ySpread, ns, bounces, &cam, world);
+		}
+
+		args[i]->setFramebuffer(framebuffer);
+		rc = pthread_create(&t[i], NULL, ThreadLoop, (void *)args[i]);
+		if (rc)
+		{
+			std::cout << "ERROR: unable to create thread " << rc << endl;
+			exit(-1);
+		}
+	}
+
+	for (int i = 0; i < THREAD_NUM; i++)
+	{
+		pthread_join(t[i], &status);
+	}
+	
+
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-
 	std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
 
+	for (int i = 0; i < canvasSize; i++)
+	{
+		outputfile << framebuffer[i].color.r() << " " << framebuffer[i].color.g() << " " << framebuffer[i].color.b() << " /n";
+	}
+	
+
+//=========================================================================
+#pragma endregion
+#pragma region Print results
+	//============================= print results =============================
 	std::cout << "=========================================================================" << std::endl;
 	std::cout << "It took " << time_span.count() << " seconds." << std::endl;
 	long rays = ns * nx * ny;
 	std::cout << "total rays: " << rays << std::endl;
 	std::cout << "rays/s: " << (double)rays / time_span.count() << std::endl;
 	std::cout << "=========================================================================" << std::endl;
-	//=========================================================================
-
+//=========================================================================
+#pragma endregion
+#pragma region Delete loop
 	//============================== Delete loop ==============================
 	for (int i = 0; i < spheres; i++)
 	{
@@ -215,5 +320,6 @@ int main(int argc, char** argv)
 	delete[] matList;
 	delete world;
 
-	//=========================================================================
+//=========================================================================
+#pragma endregion
 }

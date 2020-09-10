@@ -95,6 +95,11 @@ public:
 		e[2] = 0;
 	}
     inline vec3(float e0, float e1, float e2) {e[0] = e0; e[1] = e1; e[2] = e2;}
+	inline void set(float x, float y, float z) {
+		this->e[0] = x;
+		this->e[1] = y;
+		this->e[2] = z;
+	}
     inline float x() const {return e[0];}
     inline float y() const {return e[1];}
     inline float z() const {return e[2];}

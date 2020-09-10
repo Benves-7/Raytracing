@@ -10,6 +10,8 @@
 [Rr]ay Tracing/.visuallint
 [Rr]ay Tracing/[Rr]ay Tracing/cache*
 [Rr]ay Tracing/[Rr]ay Tracing/call*
+Optimized/.vscode/
+mainThreading.cpp
 [Tt]esting/
 [Ll]atex/
 
