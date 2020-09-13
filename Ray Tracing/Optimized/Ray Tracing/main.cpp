@@ -14,7 +14,7 @@
 #include "material.h"
 
 using namespace std;
-const int THREAD_NUM = get_nprocs();
+const int THREAD_NUM = get_nprocs() - 1;
 
 #pragma region Structs
 
@@ -69,8 +69,17 @@ vec3 color(const ray &r, hitable *world, int max_bounces, int depth = 0)
 void *ThreadLoop(void *arguments)
 {
 	struct thread_arg *arg = (struct thread_arg *)arguments;
-
-	for (int y = arg->startY; y <= arg->endY; y++)
+	if (arg->endY >= arg->heigth)
+	{
+		cout << "end is bigger then heigth : end = " << arg->endY << " heigth = " << arg->heigth << endl;
+		arg->endY = arg->heigth - 1;
+	}
+	cout 
+		<< "thread loop " << pthread_self
+		<< "\n thread start = " << arg->startY
+		<< "\n thread end = " << arg->endY << endl; 
+	
+	for (int y = arg->endY; y >= arg->startY; y--	)
 	{
 		for (int x = 0; x < arg->width; x++)
 		{
@@ -90,14 +99,16 @@ void *ThreadLoop(void *arguments)
 			arg->framebuffer[x + y * arg->width].color.set(ir, ig, ib);
 		}
 	}
+
+	pthread_exit(NULL);
 }
 
 int main(int argc, char **argv)
 {
 #pragma region Const arguments
 	//============================ const arguments ============================
-	int nx = 200;
-	int ny = 100;
+	int nx = 500;
+	int ny = 250;
 	int ns = 10;
 	int spheres = 10;
 	int canvasSize = nx * ny;
@@ -129,6 +140,8 @@ int main(int argc, char **argv)
 	for (int i = 0; i < argc; ++i)
 	{
 		std::string arg = argv[i];
+
+		cout << "Arguments = " << argc << endl;
 		if (arg.substr(arg.length() - 4) == ".exe" || arg.substr(arg.length() - 2) == ".o")
 		{
 			continue;
@@ -177,7 +190,7 @@ int main(int argc, char **argv)
 #pragma endregion
 #pragma region File saving(setup)
 	//============================== file saving ==============================
-	std::ofstream outputfile;
+	ofstream outputfile;
 	outputfile.open("Output/-spheres " + std::to_string(spheres - 2) + " -rpp " + std::to_string(ns) + " -bounces " + std::to_string(bounces) + " -vfov " + std::to_string(vfov) + " -ap " + stream.str() + ".ppm");
 	outputfile << "P3\n"
 			   << nx << " " << ny << "\n255\n";
@@ -234,6 +247,7 @@ int main(int argc, char **argv)
 #pragma region Print config
 	//============================= print configs =============================
 	std::cout
+		<< "number of threads = " << THREAD_NUM << " \n"
 		<< "=========================================================================\n"
 		<< "size:		" << nx << "x" << ny << "\n"
 		<< "ray/pixel:	" << ns << "\n"
@@ -258,7 +272,7 @@ int main(int argc, char **argv)
 
 	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
-	int ySpread = ny / THREAD_NUM;
+	int ySpread = ceil((float)ny / THREAD_NUM);
 
 	int rc;
 
@@ -266,13 +280,13 @@ int main(int argc, char **argv)
 	{
 		if (i == 0)
 		{
+			
 			args[i] = new thread_arg(nx, ny, i * ySpread, (i + 1) * ySpread, ns, bounces, &cam, world);
 		}
 		else
 		{
 			args[i] = new thread_arg(nx, ny, i * ySpread + 1, (i + 1) * ySpread, ns, bounces, &cam, world);
 		}
-
 		args[i]->setFramebuffer(framebuffer);
 		rc = pthread_create(&t[i], NULL, ThreadLoop, (void *)args[i]);
 		if (rc)
@@ -285,19 +299,22 @@ int main(int argc, char **argv)
 	for (int i = 0; i < THREAD_NUM; i++)
 	{
 		pthread_join(t[i], &status);
+		cout << "thread join loop : status : " << status << endl;
 	}
 	
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
 
-	for (int i = 0; i < canvasSize; i++)
-	{
-		outputfile << framebuffer[i].color.r() << " " << framebuffer[i].color.g() << " " << framebuffer[i].color.b() << " /n";
-	}
 	
 
 //=========================================================================
+#pragma endregion
+#pragma region Save image
+	for (int i = 0; i < canvasSize; i++)
+	{
+		outputfile << framebuffer[i].color.r() << " " << framebuffer[i].color.g() << " " << framebuffer[i].color.b() << " \n";
+	}
 #pragma endregion
 #pragma region Print results
 	//============================= print results =============================
