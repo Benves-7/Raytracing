@@ -130,7 +130,7 @@ int main(int argc, char **argv)
 
 	camera cam(lookfrom, lookat, vup, vfov, float(nx) / float(ny), aperature, dist_to_focus);
 
-//=========================================================================
+	//=========================================================================
 #pragma endregion
 #pragma region read Inputs
 	//============================ input arguments ============================
@@ -185,7 +185,7 @@ int main(int argc, char **argv)
 		std::cout << "You have entered a unrecognised command." << std::endl;
 	}
 
-//=========================================================================
+	//=========================================================================
 #pragma endregion
 #pragma region File saving(setup)
 	//============================== file saving ==============================
@@ -197,7 +197,7 @@ int main(int argc, char **argv)
 	if (!outputfile.is_open())
 		std::cerr << "*** error: could not open output file\n";
 
-//=========================================================================
+	//=========================================================================
 #pragma endregion
 #pragma region Sphere setup
 	//============================= create sphere =============================
@@ -241,7 +241,7 @@ int main(int argc, char **argv)
 		}
 	}
 	hitable *world = new hitable_list(list, spheres);
-//=========================================================================
+	//=========================================================================
 #pragma endregion
 #pragma region Print config
 	//============================= print configs =============================
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 		<< "spheres:	" << spheres << "\n"
 		<< "aperature:	" << aperature << "\n"
 		<< "=========================================================================\n";
-//=========================================================================
+	//=========================================================================
 #pragma endregion
 #pragma region Thread Setup
 	//=============================== threading ===============================
@@ -264,7 +264,7 @@ int main(int argc, char **argv)
 	thread_arg *args = new thread_arg[THREAD_NUM];
 	void *status;
 
-//=========================================================================
+	//=========================================================================
 #pragma endregion
 #pragma region Main Loop
 	//=============================== main loop ===============================
@@ -279,7 +279,7 @@ int main(int argc, char **argv)
 	{
 		if (i == 0)
 		{
-			
+
 			args[i] = thread_arg(nx, ny, i * ySpread, (i + 1) * ySpread, ns, bounces, &cam, world);
 		}
 		else
@@ -307,7 +307,7 @@ int main(int argc, char **argv)
 
 	
 
-//=========================================================================
+	//=========================================================================
 #pragma endregion
 #pragma region Save image
 	for (int i = canvasSize-1; i >= 0; i--)
@@ -325,7 +325,7 @@ int main(int argc, char **argv)
 	<< "total rays: " << rays << "\n"
 	<< "rays/s: " << (double)rays / time_span.count() << "\n"
 	<< "=========================================================================" << "\n";
-//=========================================================================
+	//=========================================================================
 #pragma endregion
 #pragma region Delete loop
 	//============================== Delete loop ==============================
@@ -341,6 +341,6 @@ int main(int argc, char **argv)
 	delete[] args;
 	pthread_exit(NULL);
 
-//=========================================================================
+	//=========================================================================
 #pragma endregion
 }
