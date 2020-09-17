@@ -71,14 +71,8 @@ void *ThreadLoop(void *arguments)
 	struct thread_arg *arg = (struct thread_arg *)arguments;
 	if (arg->endY >= arg->heigth)
 	{
-		cout << "end is bigger then heigth : end = " << arg->endY << " heigth = " << arg->heigth << endl;
 		arg->endY = arg->heigth - 1;
 	}
-	cout 
-		<< "thread loop " << pthread_self
-		<< "\n thread start = " << arg->startY
-		<< "\n thread end = " << arg->endY << endl; 
-	
 	for (int y = arg->endY; y >= arg->startY; y--	)
 	{
 		for (int x = 0; x < arg->width; x++)
@@ -100,17 +94,20 @@ void *ThreadLoop(void *arguments)
 		}
 	}
 
-	pthread_exit(NULL);
+	cout << "Thread " << pthread_self << " :: END" << endl;
+
+	return NULL;
+	//pthread_exit(NULL);
 }
 
 int main(int argc, char **argv)
 {
 #pragma region Const arguments
 	//============================ const arguments ============================
-	int nx = 500;
-	int ny = 250;
+	int nx = 600;
+	int ny = 300;
 	int ns = 10;
-	int spheres = 10;
+	int spheres = 27;
 	int canvasSize = nx * ny;
 
 	pixel *framebuffer = new pixel[canvasSize];
@@ -137,12 +134,14 @@ int main(int argc, char **argv)
 #pragma endregion
 #pragma region read Inputs
 	//============================ input arguments ============================
+	
+	cout << "num of arguments = " << argc << endl;
 	for (int i = 0; i < argc; ++i)
 	{
 		std::string arg = argv[i];
 
-		cout << "Arguments = " << argc << endl;
-		if (arg.substr(arg.length() - 4) == ".exe" || arg.substr(arg.length() - 2) == ".o")
+		cout << "Arguments " << i << ": " << arg << endl;
+		if (arg.substr(arg.length() - 4) == ".exe" || arg.substr(arg.length() - 4) == ".out")
 		{
 			continue;
 		}
@@ -223,19 +222,19 @@ int main(int argc, char **argv)
 		size = ran * radius_max + radius_min;
 		float type = randomFloat();
 		// lambertian
-		if (type <= 0.5)
+		if (type <= 0.5f)
 		{
 			matList[i] = new lambertian(vec3(randomFloat(), randomFloat(), randomFloat()));
 			list[i] = new sphere(vec3(randomFloatboth() * spread, size - 0.5f, randomFloatboth() * spread), size, matList[i]);
 		}
 		// metal
-		else if (type > 0.5 && type <= 0.9)
+		else if (type > 0.5f && type <= 0.9f)
 		{
 			matList[i] = new metal(vec3(randomFloat(), randomFloat(), randomFloat()), randomFloat());
 			list[i] = new sphere(vec3(randomFloatboth() * spread, size - 0.5f, randomFloatboth() * spread), size, matList[i]);
 		}
 		// dielectric
-		else if (type > 0.9)
+		else if (type > 0.9f)
 		{
 			matList[i] = new dielectric(randomFloat());
 			list[i] = new sphere(vec3(randomFloatboth() * spread, size - 0.5f, randomFloatboth() * spread), size, matList[i]);
@@ -262,7 +261,7 @@ int main(int argc, char **argv)
 	//=============================== threading ===============================
 
 	pthread_t t[THREAD_NUM];
-	thread_arg *args[THREAD_NUM];
+	thread_arg *args = new thread_arg[THREAD_NUM];
 	void *status;
 
 //=========================================================================
@@ -272,7 +271,7 @@ int main(int argc, char **argv)
 
 	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
-	int ySpread = ceil((float)ny / THREAD_NUM);
+	int ySpread = int(ceil(float(ny) / float(THREAD_NUM)));
 
 	int rc;
 
@@ -281,14 +280,14 @@ int main(int argc, char **argv)
 		if (i == 0)
 		{
 			
-			args[i] = new thread_arg(nx, ny, i * ySpread, (i + 1) * ySpread, ns, bounces, &cam, world);
+			args[i] = thread_arg(nx, ny, i * ySpread, (i + 1) * ySpread, ns, bounces, &cam, world);
 		}
 		else
 		{
-			args[i] = new thread_arg(nx, ny, i * ySpread + 1, (i + 1) * ySpread, ns, bounces, &cam, world);
+			args[i] = thread_arg(nx, ny, i * ySpread + 1, (i + 1) * ySpread, ns, bounces, &cam, world);
 		}
-		args[i]->setFramebuffer(framebuffer);
-		rc = pthread_create(&t[i], NULL, ThreadLoop, (void *)args[i]);
+		args[i].setFramebuffer(framebuffer);
+		rc = pthread_create(&t[i], NULL, ThreadLoop, (void*)&args[i]);
 		if (rc)
 		{
 			std::cout << "ERROR: unable to create thread " << rc << endl;
@@ -311,19 +310,21 @@ int main(int argc, char **argv)
 //=========================================================================
 #pragma endregion
 #pragma region Save image
-	for (int i = 0; i < canvasSize; i++)
+	for (int i = canvasSize-1; i >= 0; i--)
 	{
 		outputfile << framebuffer[i].color.r() << " " << framebuffer[i].color.g() << " " << framebuffer[i].color.b() << " \n";
 	}
 #pragma endregion
 #pragma region Print results
 	//============================= print results =============================
-	std::cout << "=========================================================================" << std::endl;
-	std::cout << "It took " << time_span.count() << " seconds." << std::endl;
 	long rays = ns * nx * ny;
-	std::cout << "total rays: " << rays << std::endl;
-	std::cout << "rays/s: " << (double)rays / time_span.count() << std::endl;
-	std::cout << "=========================================================================" << std::endl;
+
+	cout 
+	<< "=========================================================================\n"
+	<< "It took " << time_span.count() << " seconds.\n"
+	<< "total rays: " << rays << "\n"
+	<< "rays/s: " << (double)rays / time_span.count() << "\n"
+	<< "=========================================================================" << "\n";
 //=========================================================================
 #pragma endregion
 #pragma region Delete loop
@@ -336,6 +337,9 @@ int main(int argc, char **argv)
 	delete[] list;
 	delete[] matList;
 	delete world;
+	delete[] framebuffer;
+	delete[] args;
+	pthread_exit(NULL);
 
 //=========================================================================
 #pragma endregion

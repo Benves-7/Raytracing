@@ -162,14 +162,14 @@ public:
     float e[3];
 };
 
-inline std::istream& operator>>(std::istream& is, const vec3& t) {
-	//is >> t.e[0] >> t.e[1] >> t.e[2];
-	//return is;
-}
-inline std::ostream& operator<<(std::ostream& os, const vec3& t) {
-	os << t.e[0] << " " << t.e[1] << " " << t.e[2];
-	return os;
-}
+// inline std::istream& operator>>(std::istream& is, const vec3& t) {
+// 	//is >> t.e[0] >> t.e[1] >> t.e[2];
+// 	//return is;
+// }
+// inline std::ostream& operator<<(std::ostream& os, const vec3& t) {
+// 	os << t.e[0] << " " << t.e[1] << " " << t.e[2];
+// 	return os;
+// }
 
 inline vec3 operator+(const vec3& v1, const vec3& v2) {
 	return vec3(v1.e[0] + v2.e[0], v1.e[1] + v2.e[1], v1.e[2] + v2.e[2]);
@@ -379,9 +379,8 @@ public:
 	{
         return Vector4D(this->cord[0]/t, this->cord[1]/t, this->cord[2]/t);
 	}
-	inline Vector4D operator/=(const float t) {
+	inline void operator/=(const float t) {
 	    float temp = 1.0f/t;
-
 	    this->cord[0] *= temp;
 	    this->cord[1] *= temp;
 	    this->cord[2] *= temp;
@@ -398,7 +397,7 @@ public:
         Vector4D temp((this->cord[0] - rhs.cord[0]), (this->cord[1] - rhs.cord[1]), (this->cord[2] - rhs.cord[2]));
         return temp;
     }	//Subtraction
-	inline Vector4D operator+=(const Vector4D& v){
+	inline void operator+=(const Vector4D& v){
 	    this->cord[0] += v.cord[0];
         this->cord[1] += v.cord[1];
         this->cord[2] += v.cord[2];
