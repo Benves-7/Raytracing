@@ -201,7 +201,7 @@ int main(int argc, char **argv)
 #pragma endregion
 #pragma region Sphere setup
 	//============================= create sphere =============================
-	float R = (float)cos(M_PI / 4);
+
 	hitable **list = new hitable *[spheres];
 	material **matList = new material *[spheres];
 
